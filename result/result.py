@@ -1,20 +1,52 @@
 """
 Module defines Result Sum Type and allows to specify Success and Errors more clearly
 """
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import (
-    Callable,
-    Generic,
-    NamedTuple,
-    Optional,
-    TypeVar,
-    Union,
-    overload,
-)
+from functools import partial, reduce
+from typing import Any, Callable, Generic, Iterable, TypeVar, Union, overload
 
 # from dataclasses import dataclass
 ResT = TypeVar("ResT")
 # Currently only strings supported
+
+ResO = TypeVar("ResO")
+
+
+def bind(
+    f: "Callable[[ResO], Result[ResT]]", o: "Result[ResO]"
+) -> Error | Success[ResT]:
+    """Bind for Result Type -> if item is of instance Success, apply f to it
+    else return item directly without evaluating f
+    """
+    if isinstance(o, Success):
+        return f(o.val)
+    else:
+        return o
+
+
+def map(f: "Callable[[ResO], ResT]", o: "Result[ResO]") -> Error | Success[ResT]:
+    if isinstance(o, Success):
+        return Success(f(o.val))
+    else:
+        return o
+
+
+def unit(input: ResT) -> Success[ResT]:
+    return Success(input)
+
+
+def do(fs: "Iterable[Callable[[Any], Result[Any]]]", input: "ResO"):
+    init = unit(input)
+    binded_functions = [partial(bind, f) for f in fs]
+
+    def f(start: Result[Any]):
+        init = start
+        for _f in binded_functions:
+            init: Result[Any] = _f(init)
+        return init
+
+    return f(init)
 
 
 @dataclass(frozen=True, eq=True)
@@ -69,34 +101,4 @@ class Error:
 
 
 Result = Union[Success[ResT], Error]
-
-
-def unwrap(result: Result[ResT]) -> ResT:
-    """In case Success is expected return ResT in Success else raise ValueError"""
-    if not isinstance(result, Success):
-        raise ValueError
-    return result.val
-
-
-ResO = TypeVar("ResO")
-ResFunction = Callable[[ResO], Result[ResT]]
-
-
-def bind(f: ResFunction[ResO, ResT], res: Result[ResO]):
-    """Bind for Result Type -> if item is of instance Success, apply f to it
-    else return item directly without evaluating f
-    """
-    if isinstance(res, Success):
-        return f(res.val)
-    else:
-        return res
-
-
-def map(f: Callable[[ResO], ResT], res: Result[ResO]) -> Result[ResT]:
-    if isinstance(res, Success):
-        return Success(f(res.val))
-    else:
-        return res
-
-
-IOResult = Optional[Error]
+ResFunction = Callable[[ResT], Result[ResO]]

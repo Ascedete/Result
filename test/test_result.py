@@ -1,6 +1,7 @@
+from __future__ import unicode_literals
 from functools import partial, reduce
 from typing import Any, Callable
-from result.result import Result, Success, Error
+from result.result import Success, Error
 from result import result
 
 
@@ -16,7 +17,6 @@ def test_map():
     """
     Test if map correctly defined for Result Type
     """
-    mapper = lambda x: Success(x) if x else Error(str(x))
     f2 = lambda x: (x, x)
     f3 = lambda x: x[0] + x[1]
 
@@ -29,5 +29,5 @@ def test_map():
         return reduce(inner, functions)
 
     m = chain([f2, f3])
-    assert m(mapper(1)) == Success(2)
-    assert m(mapper(0)) == Error("0")
+    assert m(result.unit(1)) == Success(2)
+    assert m(Error("0")) == Error("0")
