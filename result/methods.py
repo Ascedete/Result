@@ -1,5 +1,5 @@
 from .type_defines import *
-from typing import Callable
+from typing import Any, Callable
 
 
 def bind(f: "Callable[[ResO], Result[ResT, ErrT2]]", o: "Result[ResO, ErrT]"):
@@ -21,3 +21,10 @@ def map(f: "Callable[[ResO], ResT]", o: "Result[ResO, ErrT]"):
 
 def unit(input: ResT) -> Success[ResT]:
     return Success(input)
+
+
+def expect(input: Result[ResT, Any], err_msg: str = ""):
+    if isinstance(input, Error):
+        raise ValueError(err_msg) if err_msg else ValueError(f"Got Error {input.val}")
+    else:
+        return input.val
