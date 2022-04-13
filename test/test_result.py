@@ -37,6 +37,22 @@ def test_map():
     assert m(Error(0)) == Error(0)
 
 
+def test_method_chaining():
+    input = Success(10)
+    res = (
+        input.map(lambda x: x + x)
+        .bind(lambda x: Success(x) if x == 0 else Error("Expected 0"))
+        .map(lambda x: Success(x))
+    )
+    assert not res
+    assert res.val == "Expected 0"
+
+    with pytest.raises(ValueError):
+        res.expect()
+
+    assert Success(2).expect() == 2
+
+
 def test_expect():
     def div(a: float, b: float):
         if b == 0:

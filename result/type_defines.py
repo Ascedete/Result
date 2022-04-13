@@ -3,7 +3,7 @@ Module defines Result Sum Type and allows to specify Success and Errors more cle
 """
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Generic, TypeVar, Union
+from typing import Any, Callable, Generic, TypeVar, Union
 
 # from dataclasses import dataclass
 ResT = TypeVar("ResT")
@@ -28,6 +28,15 @@ class Success(Generic[ResT]):
     def __bool__(self):
         return True
 
+    def map(self, f: Callable[[ResT], ResO]):
+        return Success(f(self.val))
+
+    def bind(self, f: Callable[[ResT], Result[ResO, Any]]):
+        return f(self.val)
+
+    def expect(self, msg: str = ""):
+        return self.val
+
 
 @dataclass(frozen=True, eq=True)
 class Error(Generic[ErrT]):
@@ -40,6 +49,15 @@ class Error(Generic[ErrT]):
 
     def __bool__(self):
         return False
+
+    def map(self, f: Callable[[ResT], ResO]):
+        return self
+
+    def bind(self, f: Callable[[ResT], Result[ResO, Any]]):
+        return self
+
+    def expect(self, msg: str = ""):
+        raise ValueError(msg if msg else f"Error! {self.val}")
 
 
 Result = Union[Success[ResT], Error[ErrT]]
